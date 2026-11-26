@@ -183,6 +183,8 @@
   .notes-liste li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-top: 1px solid var(--trait); }
   .notes-liste li:first-child { border-top: 0; }
   .notes-liste .bas { color: var(--echec); font-weight: 600; }
+  .notes-liste li.abs-ligne { flex-direction: column; gap: 0; padding: 6px 0; }
+  .abs-cours { font-weight: 500; }
   .abs-chiffre { font-weight: 600; }
   .abs-chiffre.haute { color: var(--echec); }
 
@@ -463,7 +465,10 @@
     const a = e.absences || { nonValidees: 0, validees: 0, heuresNonValidees: 0, heuresValidees: 0, detailNonValidees: [] };
     const ulA = el("ul", { class: "notes-liste" });
     (a.detailNonValidees || []).forEach((x) => {
-      ulA.appendChild(el("li", null, [el("span", { text: x.cours + " — " + x.date + " à " + x.heure }), el("span", { text: nb1.format(x.duree) + " h" })]));
+      ulA.appendChild(el("li", { class: "abs-ligne" }, [
+        el("span", { class: "abs-cours", text: x.cours + " — " + nb1.format(x.duree) + " h" }),
+        el("span", { class: "discret", text: x.date + " à " + x.heure })
+      ]));
     });
     const blocAbs = el("div", { class: "detail-bloc" }, [
       el("h3", { text: "Absences" }, [el("small", { text: nb1.format(a.heuresNonValidees) + " h non justifiées · " + nb1.format(a.heuresValidees) + " h justifiées" })])
