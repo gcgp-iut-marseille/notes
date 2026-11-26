@@ -343,11 +343,12 @@
     const listeAbs = $("absences-non-validees");
     listeAbs.textContent = "";
     if (abs && typeof abs.validees === "number") {
+      const h = (v) => nombre.format(v || 0) + " h";
       const pl = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
-      $("resume-absences").textContent = pl(abs.validees, "absence justifiée") + " · " + pl(abs.nonValidees, "absence non justifiée");
+      $("resume-absences").textContent = pl(abs.validees, "absence justifiée") + " (" + h(abs.heuresValidees) + ")" + " · " + pl(abs.nonValidees, "absence non justifiée") + " (" + h(abs.heuresNonValidees) + ")";
       (abs.detailNonValidees || []).forEach((a) => {
         listeAbs.appendChild(el("li", null, [
-          el("span", null, [a.cours, el("span", { class: "matiere-date", text: a.date + " à " + a.heure })]),
+          el("span", null, [a.cours, el("span", { class: "matiere-date", text: a.date + " à " + a.heure + (a.duree ? " · " + nombre.format(a.duree) + " h" : "") })]),
           el("span", { class: "note basse", text: "Non justifiée" })
         ]));
       });
