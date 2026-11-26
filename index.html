@@ -344,11 +344,11 @@
     listeAbs.textContent = "";
     if (abs && typeof abs.validees === "number") {
       const pl = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
-      $("resume-absences").textContent = pl(abs.validees, "absence validée") + " · " + pl(abs.nonValidees, "absence non validée");
+      $("resume-absences").textContent = pl(abs.validees, "absence justifiée") + " · " + pl(abs.nonValidees, "absence non justifiée");
       (abs.detailNonValidees || []).forEach((a) => {
         listeAbs.appendChild(el("li", null, [
           el("span", null, [a.cours, el("span", { class: "matiere-date", text: a.date + " à " + a.heure })]),
-          el("span", { class: "note basse", text: "Non validée" })
+          el("span", { class: "note basse", text: "Non justifiée" })
         ]));
       });
       blocAbs.hidden = false;
