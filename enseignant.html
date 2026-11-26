@@ -194,7 +194,11 @@
   .distri span.r { background: var(--echec); }
   .distri span.m { background: var(--vigilance); }
   .distri-lib { font-size: 0.75rem; color: var(--encre-douce); white-space: nowrap; }
-  .distri-duo { display: flex; gap: 16px; }
+  .distri-duo { display: flex; gap: 14px; align-items: flex-start; }
+  .distri-bloc { width: 96px; flex: none; }
+  .distri-bloc .distri-lib { font-size: 0.68rem; letter-spacing: 0; }
+  .distri-bloc .distri span { width: 12px; }
+  .distri-an { font-size: 0.7rem; color: var(--encre-douce); margin-bottom: 4px; }
   .distri.ref span { opacity: 0.45; }
   .ue-moyenne.delta-bas { color: var(--echec); }
   .ue-moyenne.delta-haut { color: var(--valide); }
@@ -662,10 +666,10 @@
 
   function histogramme(m) {
     const cadre = el("div", { class: "distri-duo" }, [
-      el("div", null, [barres(m.distribution, m.n, ""), el("div", { class: "distri-lib", text: "2026-27 : " + m.distribution.join(" · ") })])
+      el("div", { class: "distri-bloc" }, [el("div", { class: "distri-an", text: "2026-27" }), barres(m.distribution, m.n, ""), el("div", { class: "distri-lib", text: m.distribution.join(" · ") })])
     ]);
     if (m.ref && m.ref.distribution) {
-      cadre.appendChild(el("div", null, [barres(m.ref.distribution, m.ref.n, "ref"), el("div", { class: "distri-lib", text: "25-26 : " + m.ref.distribution.join(" · ") })]));
+      cadre.appendChild(el("div", { class: "distri-bloc" }, [el("div", { class: "distri-an", text: "2025-26" }), barres(m.ref.distribution, m.ref.n, "ref"), el("div", { class: "distri-lib", text: m.ref.distribution.join(" · ") })]));
     }
     return cadre;
   }
