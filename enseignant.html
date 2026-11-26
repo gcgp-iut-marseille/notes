@@ -53,7 +53,7 @@
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
   }
-  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 56px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 56px; }
   [hidden] { display: none !important; }
   h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 600; margin: 0; }
   h2 { font-size: 1.0625rem; font-weight: 600; margin: 32px 0 12px; }
@@ -122,7 +122,7 @@
     overflow-x: auto;
   }
   table { width: 100%; border-collapse: collapse; min-width: 620px; }
-  th, td { text-align: left; padding: 10px 16px; border-top: 1px solid var(--trait); vertical-align: top; }
+  th, td { text-align: left; padding: 10px 12px; border-top: 1px solid var(--trait); vertical-align: top; }
   thead th { border-top: 0; font-weight: 600; font-size: 0.875rem; white-space: nowrap; padding-top: 12px; padding-bottom: 12px; }
   thead button {
     font: inherit; font-weight: inherit; color: inherit;
@@ -133,6 +133,7 @@
   th[aria-sort="descending"] button::after { content: " ▼"; font-size: 0.7em; }
   tbody tr:hover { background: var(--survol); }
   .etu-nom { font-weight: 500; }
+  td:first-child { min-width: 190px; }
   .etu-num { color: var(--encre-douce); font-size: 0.8125rem; }
   td.ue { white-space: nowrap; }
   .ue-moyenne { font-weight: 600; }
@@ -149,6 +150,49 @@
   .badge.forte { background: var(--echec-fond); color: var(--echec); }
   .badge.legere { background: var(--vigilance-fond); color: var(--vigilance); }
   .vide { text-align: center; color: var(--encre-douce); padding: 28px 16px; }
+
+  /* ---------- Onglets, filtres ---------- */
+  .onglets { display: flex; gap: 8px; margin: 28px 0 14px; flex-wrap: wrap; }
+  .onglet {
+    font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--carte); color: var(--encre);
+    border: 1px solid var(--trait); border-radius: 999px; padding: 8px 18px;
+  }
+  .onglet[aria-selected="true"] { background: var(--primaire); color: var(--primaire-texte); border-color: var(--primaire); }
+  select {
+    font: inherit; color: inherit; background: var(--carte);
+    border: 1px solid var(--trait); border-radius: 10px; padding: 10px 12px;
+  }
+  select:focus-visible { border-color: var(--primaire); }
+  .filtres .champ label { margin-bottom: 4px; }
+
+  /* ---------- Ligne cliquable et détail d'un étudiant ---------- */
+  .lien-etu {
+    font: inherit; font-weight: 500; color: inherit; text-align: left;
+    background: none; border: 0; padding: 0; cursor: pointer;
+  }
+  .lien-etu:hover { color: var(--primaire); text-decoration: underline; }
+  .lien-etu::before { content: "▸"; display: inline-block; width: 1.1em; color: var(--encre-douce); }
+  .lien-etu[aria-expanded="true"]::before { content: "▾"; }
+  tr.detail > td { background: var(--survol); padding: 16px; }
+  .detail-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .detail-bloc { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 12px 14px; }
+  .detail-bloc h3 { margin: 0 0 8px; font-size: 0.9375rem; font-weight: 600; }
+  .detail-bloc h3 small { font-weight: 400; color: var(--encre-douce); margin-left: 6px; }
+  .notes-liste { list-style: none; margin: 0; padding: 0; font-size: 0.875rem; }
+  .notes-liste li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-top: 1px solid var(--trait); }
+  .notes-liste li:first-child { border-top: 0; }
+  .notes-liste .bas { color: var(--echec); font-weight: 600; }
+  .abs-chiffre { font-weight: 600; }
+  .abs-chiffre.haute { color: var(--echec); }
+
+  /* ---------- Matières ---------- */
+  .distri { display: inline-flex; align-items: flex-end; gap: 3px; height: 34px; }
+  .distri span { display: block; width: 14px; background: var(--primaire); border-radius: 2px 2px 0 0; min-height: 2px; }
+  .distri span.r { background: var(--echec); }
+  .distri span.m { background: var(--vigilance); }
+  .distri-lib { font-size: 0.75rem; color: var(--encre-douce); white-space: nowrap; }
+  .badge.examen { background: var(--vigilance-fond); color: var(--vigilance); }
   .legende { margin-top: 12px; max-width: 80ch; }
   .legende p + p { margin-top: 6px; }
 </style>
@@ -179,22 +223,40 @@
     <h2>La promotion par compétence</h2>
     <div class="synthese" id="synthese"></div>
 
-    <h2>Étudiants</h2>
-    <div class="filtres">
-      <div class="recherche">
-        <label for="recherche" class="discret" style="margin-bottom:4px">Rechercher un étudiant</label>
-        <input id="recherche" type="search" placeholder="Nom ou numéro" autocomplete="off">
-      </div>
-      <label class="case"><input id="filtre-alertes" type="checkbox"> Alertes seulement</label>
+    <div class="onglets" role="tablist">
+      <button class="onglet" role="tab" id="onglet-etudiants" aria-selected="true" type="button">Étudiants</button>
+      <button class="onglet" role="tab" id="onglet-matieres" aria-selected="false" type="button">Matières</button>
     </div>
 
-    <div class="tableau-cadre">
-      <table>
-        <thead>
-          <tr id="entetes"></tr>
-        </thead>
-        <tbody id="corps"></tbody>
-      </table>
+    <div class="filtres">
+      <div class="champ">
+        <label for="filtre-ue" class="discret">Compétence</label>
+        <select id="filtre-ue"><option value="">Toutes les compétences</option></select>
+      </div>
+      <div class="champ recherche" id="bloc-recherche">
+        <label for="recherche" class="discret">Rechercher un étudiant</label>
+        <input id="recherche" type="search" placeholder="Nom ou numéro" autocomplete="off">
+      </div>
+      <label class="case" id="bloc-alertes"><input id="filtre-alertes" type="checkbox"> Alertes seulement</label>
+      <label class="case" id="bloc-absences"><input id="filtre-abs" type="checkbox"><span>Plus de <span id="franchise"></span> h non justifiées</span></label>
+    </div>
+
+    <div id="vue-etudiants">
+      <div class="tableau-cadre">
+        <table>
+          <thead><tr id="entetes"></tr></thead>
+          <tbody id="corps"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="vue-matieres" hidden>
+      <div class="tableau-cadre">
+        <table>
+          <thead><tr id="entetes-matieres"></tr></thead>
+          <tbody id="corps-matieres"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="legende discret" id="legende"></div>
@@ -215,13 +277,20 @@
 
   const $ = (id) => document.getElementById(id);
 
+  const FRANCHISE_H = 8; // franchise d'heures non justifiées avant malus (règle du département)
+
   const etat = {
     donnees: null,
     codes: [],
     seuils: { zscore: -1.5, tendance: -1.5, validation: 10 },
+    vue: "etudiants",
+    filtreUE: "",
     tri: { cle: "alerte", sens: -1 },
+    triMat: { cle: "moyenne", sens: 1 },
     alertesSeulement: false,
-    recherche: ""
+    absSeulement: false,
+    recherche: "",
+    ouverts: {}
   };
 
   function el(tag, props, enfants) {
@@ -244,9 +313,13 @@
     return t.length % 2 ? t[m] : (t[m - 1] + t[m]) / 2;
   }
 
+  const codesAffiches = () => (etat.filtreUE ? [etat.filtreUE] : etat.codes);
+  const nomCompetence = (c) => (NOMS_COMPETENCES[c] || c);
+  const nomAffiche = (e) => e.nom || e.numero;
+
   function niveauEtudiant(e) {
     let n = "aucune";
-    etat.codes.forEach((c) => {
+    codesAffiches().forEach((c) => {
       const a = e.competences[c] && e.competences[c].alerte;
       if (a && RANG[a] > RANG[n]) n = a;
     });
@@ -255,20 +328,20 @@
 
   function zMin(e) {
     let m = Infinity;
-    etat.codes.forEach((c) => {
+    codesAffiches().forEach((c) => {
       const z = e.competences[c] && e.competences[c].zscore;
       if (typeof z === "number" && z < m) m = z;
     });
     return m;
   }
 
-  function nomAffiche(e) { return e.nom || e.numero; }
+  const heuresNJ = (e) => (e.absences ? e.absences.heuresNonValidees || 0 : 0);
 
   /* ---------- Synthèse ---------- */
   function rendreSynthese() {
     const conteneur = $("synthese");
     conteneur.textContent = "";
-    etat.codes.forEach((code) => {
+    codesAffiches().forEach((code) => {
       const moyennes = etat.donnees.etudiants
         .map((e) => e.competences[code].moyenne)
         .filter((v) => typeof v === "number");
@@ -276,18 +349,19 @@
       const validees = moyennes.filter((v) => v >= etat.seuils.validation).length;
       const pct = moyennes.length ? Math.round((validees / moyennes.length) * 100) : 0;
       const alertes = etat.donnees.etudiants.filter((e) => e.competences[code].alerte !== "aucune").length;
+      const med = mediane(moyennes);
 
       const lignes = [
-        ["Médiane", nb1.format(mediane(moyennes)) + "/20"],
+        ["Médiane", med === null ? "—" : nb1.format(med) + "/20"],
         ["Écart-type", nb2.format(stats.ecartType)],
         ["Compétence validée", validees + " sur " + moyennes.length + " (" + pct + " %)"],
-        ["Étudiants en alerte ou à surveiller", String(alertes)]
+        ["En alerte ou à surveiller", String(alertes)]
       ];
       const dl = el("dl");
       lignes.forEach((l) => { dl.appendChild(el("dt", { text: l[0] })); dl.appendChild(el("dd", { text: l[1] })); });
 
       conteneur.appendChild(el("div", { class: "synthese-carte" }, [
-        el("p", { class: "synthese-titre", text: NOMS_COMPETENCES[code] || code }),
+        el("p", { class: "synthese-titre", text: nomCompetence(code) }),
         el("p", { class: "synthese-code", text: code }),
         el("p", { class: "synthese-moyenne" }, [nb1.format(stats.moyenne), el("small", { text: "/20 en moyenne" })]),
         dl
@@ -295,10 +369,12 @@
     });
   }
 
-  /* ---------- Tableau ---------- */
+  /* ---------- Vue Étudiants ---------- */
   function colonnes() {
     const cols = [{ cle: "nom", libelle: "Étudiant" }];
-    etat.codes.forEach((c) => cols.push({ cle: c, libelle: (NOMS_COMPETENCES[c] || c) + " (" + c + ")" }));
+    if (!etat.filtreUE) cols.push({ cle: "mg", libelle: "Moyenne générale" });
+    codesAffiches().forEach((c) => cols.push({ cle: c, libelle: nomCompetence(c) + " (" + c + ")" }));
+    cols.push({ cle: "abs", libelle: "Absences non justifiées" });
     cols.push({ cle: "alerte", libelle: "Alerte" });
     return cols;
   }
@@ -312,12 +388,18 @@
       const b = el("button", { type: "button", text: col.libelle });
       b.addEventListener("click", () => {
         if (etat.tri.cle === col.cle) etat.tri.sens = -etat.tri.sens;
-        else etat.tri = { cle: col.cle, sens: col.cle === "alerte" ? -1 : 1 };
-        rendreTableau();
+        else etat.tri = { cle: col.cle, sens: (col.cle === "nom") ? 1 : (col.cle === "alerte" || col.cle === "abs" ? -1 : -1) };
+        rendreEtudiants();
       });
       th.appendChild(b);
       tr.appendChild(th);
     });
+  }
+
+  function valeurTri(e, cle) {
+    if (cle === "mg") return e.moyenneGenerale;
+    if (cle === "abs") return heuresNJ(e);
+    return e.competences[cle] ? e.competences[cle].moyenne : null;
   }
 
   function comparer(a, b) {
@@ -330,10 +412,10 @@
       if (r === 0) r = zMin(b) - zMin(a);          // à gravité égale, le plus éloigné de la classe d'abord
       if (!isFinite(r)) r = 0;
     } else {
-      const va = a.competences[cle].moyenne, vb = b.competences[cle].moyenne;
-      if (va === null && vb === null) r = 0;
-      else if (va === null) return 1;
-      else if (vb === null) return -1;
+      const va = valeurTri(a, cle), vb = valeurTri(b, cle);
+      if ((va === null || va === undefined) && (vb === null || vb === undefined)) r = 0;
+      else if (va === null || va === undefined) return 1;
+      else if (vb === null || vb === undefined) return -1;
       else r = va - vb;
     }
     return r * sens;
@@ -342,7 +424,6 @@
   function celluleCompetence(c) {
     const td = el("td", { class: "ue" + (c.alerte !== "aucune" ? " niveau-" + c.alerte : "") });
     if (typeof c.moyenne !== "number") { td.textContent = "—"; return td; }
-
     const basse = c.moyenne < etat.seuils.validation;
     td.appendChild(el("span", { class: "ue-moyenne" + (basse ? " basse" : ""), text: nb2.format(c.moyenne) }));
     if (typeof c.zscore === "number") td.appendChild(el("span", { class: "ue-detail", text: "z " + signe1.format(c.zscore) }));
@@ -350,32 +431,85 @@
     return td;
   }
 
-  function rendreTableau() {
+  function celluleAbsences(e) {
+    const td = el("td", { class: "ue" });
+    const a = e.absences || {};
+    const h = heuresNJ(e);
+    td.appendChild(el("span", { class: "abs-chiffre" + (h > FRANCHISE_H ? " haute" : ""), text: nb1.format(h) + " h" }));
+    td.appendChild(el("span", { class: "ue-detail", text: (a.nonValidees || 0) + " abs. · " + nb1.format(a.heuresValidees || 0) + " h justifiées" }));
+    return td;
+  }
+
+  function blocDetail(e) {
+    const grille = el("div", { class: "detail-grille" });
+    const parUE = etat.donnees.matieresParUE || {};
+    codesAffiches().forEach((code) => {
+      const c = e.competences[code];
+      const titre = el("h3", { text: nomCompetence(code) }, [
+        el("small", { text: typeof c.moyenne === "number" ? nb2.format(c.moyenne) + "/20" : "pas de moyenne" })
+      ]);
+      const ul = el("ul", { class: "notes-liste" });
+      (parUE[code] || []).forEach((m) => {
+        const v = e.notes[m];
+        let txt = "—", cl = "";
+        if (typeof v === "number") { txt = nb1.format(v); if (v < etat.seuils.validation) cl = "bas"; }
+        else if (v === "ABS") txt = "Absent";
+        else if (v === "VAL") txt = "Validé";
+        ul.appendChild(el("li", null, [el("span", { text: m }), el("span", { class: cl, text: txt })]));
+      });
+      grille.appendChild(el("div", { class: "detail-bloc" }, [titre, ul]));
+    });
+
+    const a = e.absences || { nonValidees: 0, validees: 0, heuresNonValidees: 0, heuresValidees: 0, detailNonValidees: [] };
+    const ulA = el("ul", { class: "notes-liste" });
+    (a.detailNonValidees || []).forEach((x) => {
+      ulA.appendChild(el("li", null, [el("span", { text: x.cours + " — " + x.date + " à " + x.heure }), el("span", { text: nb1.format(x.duree) + " h" })]));
+    });
+    const blocAbs = el("div", { class: "detail-bloc" }, [
+      el("h3", { text: "Absences" }, [el("small", { text: nb1.format(a.heuresNonValidees) + " h non justifiées · " + nb1.format(a.heuresValidees) + " h justifiées" })])
+    ]);
+    if ((a.detailNonValidees || []).length) blocAbs.appendChild(ulA);
+    else blocAbs.appendChild(el("p", { class: "discret", text: "Aucune absence non justifiée." }));
+    grille.appendChild(blocAbs);
+    return grille;
+  }
+
+  function rendreEtudiants() {
     rendreEntetes();
     const corps = $("corps");
     corps.textContent = "";
+    const nbCols = colonnes().length;
 
     const q = etat.recherche.trim().toLowerCase();
     const liste = etat.donnees.etudiants
       .filter((e) => !etat.alertesSeulement || niveauEtudiant(e) !== "aucune")
+      .filter((e) => !etat.absSeulement || heuresNJ(e) > FRANCHISE_H)
       .filter((e) => !q || (e.nom + " " + e.numero).toLowerCase().indexOf(q) !== -1)
       .sort(comparer);
 
     if (!liste.length) {
-      const tr = el("tr"); const td = el("td", { class: "vide", colspan: String(colonnes().length) });
-      td.textContent = etat.alertesSeulement ? "Aucun étudiant en alerte pour le moment." : "Aucun étudiant ne correspond à la recherche.";
+      const tr = el("tr"); const td = el("td", { class: "vide", colspan: String(nbCols) });
+      td.textContent = "Aucun étudiant ne correspond aux filtres.";
       tr.appendChild(td); corps.appendChild(tr);
       return;
     }
 
     liste.forEach((e) => {
+      const ouvert = !!etat.ouverts[e.numero];
       const tr = el("tr");
-      const tdNom = el("td", null, [
-        el("span", { class: "etu-nom", text: nomAffiche(e) }),
-        e.nom ? el("span", { class: "etu-num", text: " " + e.numero }) : ""
-      ]);
-      tr.appendChild(tdNom);
-      etat.codes.forEach((c) => tr.appendChild(celluleCompetence(e.competences[c])));
+      const bouton = el("button", { type: "button", class: "lien-etu", "aria-expanded": ouvert ? "true" : "false", text: nomAffiche(e) });
+      bouton.addEventListener("click", () => { etat.ouverts[e.numero] = !etat.ouverts[e.numero]; rendreEtudiants(); });
+      tr.appendChild(el("td", null, [bouton, e.nom ? el("span", { class: "etu-num", text: " " + e.numero }) : ""]));
+
+      if (!etat.filtreUE) {
+        const tdM = el("td", { class: "ue" });
+        if (typeof e.moyenneGenerale === "number") {
+          tdM.appendChild(el("span", { class: "ue-moyenne" + (e.moyenneGenerale < etat.seuils.validation ? " basse" : ""), text: nb2.format(e.moyenneGenerale) }));
+        } else tdM.textContent = "—";
+        tr.appendChild(tdM);
+      }
+      codesAffiches().forEach((c) => tr.appendChild(celluleCompetence(e.competences[c])));
+      tr.appendChild(celluleAbsences(e));
 
       const n = niveauEtudiant(e);
       const tdA = el("td");
@@ -384,9 +518,110 @@
       else tdA.appendChild(el("span", { class: "discret", text: "—" }));
       tr.appendChild(tdA);
       corps.appendChild(tr);
+
+      if (ouvert) {
+        const trD = el("tr", { class: "detail" });
+        const tdD = el("td", { colspan: String(nbCols) });
+        tdD.appendChild(blocDetail(e));
+        trD.appendChild(tdD);
+        corps.appendChild(trD);
+      }
     });
   }
 
+  /* ---------- Vue Matières ---------- */
+  const COLS_MAT = [
+    { cle: "matiere", libelle: "Matière" },
+    { cle: "moyenne", libelle: "Moyenne" },
+    { cle: "ecartType", libelle: "Écart-type" },
+    { cle: "mediane", libelle: "Médiane" },
+    { cle: "plage", libelle: "Min – max" },
+    { cle: "pctSous10", libelle: "Sous 10" },
+    { cle: "abs", libelle: "Absents" },
+    { cle: "distribution", libelle: "Répartition des notes" }
+  ];
+
+  function lignesMatieres() {
+    const stats = etat.donnees.statsMatieres || {};
+    let noms = Object.keys(stats);
+    if (etat.filtreUE) {
+      const dansUE = (etat.donnees.matieresParUE || {})[etat.filtreUE] || [];
+      noms = noms.filter((m) => dansUE.indexOf(m) !== -1);
+    }
+    return noms
+      .filter((m) => stats[m].n > 0 || stats[m].abs > 0 || stats[m].val > 0)
+      .map((m) => {
+        const s = stats[m];
+        return Object.assign({ matiere: m, pctSous10: s.n ? s.sous10 / s.n : null, plage: s.min }, s);
+      });
+  }
+
+  function rendreMatieres() {
+    const tr = $("entetes-matieres");
+    tr.textContent = "";
+    COLS_MAT.forEach((col) => {
+      const th = el("th", { scope: "col" });
+      if (col.cle === "distribution") { th.textContent = col.libelle; tr.appendChild(th); return; }
+      if (etat.triMat.cle === col.cle) th.setAttribute("aria-sort", etat.triMat.sens > 0 ? "ascending" : "descending");
+      const b = el("button", { type: "button", text: col.libelle });
+      b.addEventListener("click", () => {
+        if (etat.triMat.cle === col.cle) etat.triMat.sens = -etat.triMat.sens;
+        else etat.triMat = { cle: col.cle, sens: col.cle === "matiere" ? 1 : (col.cle === "moyenne" || col.cle === "mediane" || col.cle === "plage" ? 1 : -1) };
+        rendreMatieres();
+      });
+      th.appendChild(b);
+      tr.appendChild(th);
+    });
+
+    const corps = $("corps-matieres");
+    corps.textContent = "";
+    const { cle, sens } = etat.triMat;
+    const lignes = lignesMatieres().sort((a, b) => {
+      if (cle === "matiere") return a.matiere.localeCompare(b.matiere, "fr") * sens;
+      const va = cle === "abs" ? a.abs : a[cle], vb = cle === "abs" ? b.abs : b[cle];
+      if (va === null || va === undefined) return 1;
+      if (vb === null || vb === undefined) return -1;
+      return (va - vb) * sens;
+    });
+
+    if (!lignes.length) {
+      const trv = el("tr"); const td = el("td", { class: "vide", colspan: String(COLS_MAT.length), text: "Aucune note n’a encore été importée." });
+      trv.appendChild(td); corps.appendChild(trv);
+      return;
+    }
+
+    lignes.forEach((m) => {
+      const aExaminer = m.moyenne !== null && (m.moyenne < etat.seuils.validation || m.pctSous10 >= 0.5);
+      const tdNom = el("td", null, [el("span", { class: "etu-nom", text: m.matiere })]);
+      if (aExaminer) tdNom.appendChild(el("span", { class: "badge examen", style: "margin-left:8px", text: "À examiner" }));
+      const row = el("tr", null, [
+        tdNom,
+        el("td", { class: "ue" }, [el("span", { class: "ue-moyenne" + (m.moyenne !== null && m.moyenne < etat.seuils.validation ? " basse" : ""), text: m.moyenne === null ? "—" : nb2.format(m.moyenne) }),
+                                   el("span", { class: "ue-detail", text: m.n + " notes" })]),
+        el("td", { class: "ue", text: m.ecartType === null ? "—" : nb2.format(m.ecartType) }),
+        el("td", { class: "ue", text: m.mediane === null ? "—" : nb1.format(m.mediane) }),
+        el("td", { class: "ue", text: m.min === null ? "—" : nb1.format(m.min) + " – " + nb1.format(m.max) }),
+        el("td", { class: "ue", text: m.pctSous10 === null ? "—" : Math.round(m.pctSous10 * 100) + " % (" + m.sous10 + ")" }),
+        el("td", { class: "ue", text: String(m.abs) + (m.val ? " · " + m.val + " val." : "") }),
+        el("td", null, [histogramme(m)])
+      ]);
+      corps.appendChild(row);
+    });
+  }
+
+  function histogramme(m) {
+    const max = Math.max.apply(null, m.distribution.concat([1]));
+    const tr = etat.donnees.tranches || ["0–4", "4–8", "8–12", "12–16", "16–20"];
+    const boite = el("div", { class: "distri", role: "img", "aria-label": "Répartition par tranche : " + m.distribution.map((v, i) => tr[i] + " : " + v).join(", ") });
+    m.distribution.forEach((v, i) => {
+      const barre = el("span", { class: i < 2 ? "r" : (i === 2 ? "m" : ""), title: tr[i] + " : " + v + " étudiants" });
+      barre.style.height = Math.max(2, Math.round((v / max) * 34)) + "px";
+      boite.appendChild(barre);
+    });
+    return el("div", null, [boite, el("div", { class: "distri-lib", text: m.distribution.join(" · ") })]);
+  }
+
+  /* ---------- Affichage général ---------- */
   function rendreLegende() {
     const z = nb1.format(Math.abs(etat.seuils.zscore));
     const t = nb1.format(Math.abs(etat.seuils.tendance));
@@ -396,22 +631,46 @@
       "Alerte : dans une compétence, la moyenne est à plus de " + z + " écart-type sous la moyenne de la promotion, " +
       "et elle a baissé d’au moins " + t + " point depuis la mise à jour précédente des notes. À surveiller : un seul de ces deux critères." }));
     l.appendChild(el("p", { text:
-      "z : écart à la moyenne de la promotion, en écarts-types. évol. : variation de la moyenne depuis la mise à jour précédente " +
-      "(affichée dès qu’il existe deux mises à jour)." }));
+      "z : écart à la moyenne de la promotion, en écarts-types. évol. : variation depuis la mise à jour précédente (affichée dès qu’il existe deux mises à jour). " +
+      "Moyenne générale : moyenne simple des moyennes de compétence." }));
+    l.appendChild(el("p", { text:
+      "Absences non justifiées : en rouge au-delà de " + FRANCHISE_H + " h (franchise). Matière « à examiner » : moyenne sous " + etat.seuils.validation +
+      " ou au moins la moitié des étudiants sous " + etat.seuils.validation + ". Répartition : tranches de 4 points (0–4, 4–8, 8–12, 12–16, 16–20)." }));
+    if (etat.donnees.erreurAbsences) {
+      l.appendChild(el("p", { text: "Absences indisponibles : " + etat.donnees.erreurAbsences }));
+    }
+  }
+
+  function rendreTout() {
+    const n = etat.donnees.etudiants.length;
+    const alertes = etat.donnees.etudiants.filter((e) => niveauEtudiant(e) !== "aucune").length;
+    $("resume").textContent = n + " étudiants, " + alertes + " en alerte ou à surveiller";
+    rendreSynthese();
+    const vueEtu = etat.vue === "etudiants";
+    $("vue-etudiants").hidden = !vueEtu;
+    $("vue-matieres").hidden = vueEtu;
+    $("bloc-recherche").hidden = !vueEtu;
+    $("bloc-alertes").hidden = !vueEtu;
+    $("bloc-absences").hidden = !vueEtu;
+    $("onglet-etudiants").setAttribute("aria-selected", vueEtu ? "true" : "false");
+    $("onglet-matieres").setAttribute("aria-selected", vueEtu ? "false" : "true");
+    if (vueEtu) rendreEtudiants(); else rendreMatieres();
   }
 
   function afficher(data) {
     etat.donnees = data;
     etat.codes = Object.keys(data.statsClasse || {});
     if (data.seuils) etat.seuils = data.seuils;
+    $("franchise").textContent = String(FRANCHISE_H);
 
-    const n = data.etudiants.length;
-    const alertes = data.etudiants.filter((e) => niveauEtudiant(e) !== "aucune").length;
-    $("resume").textContent = n + " étudiants, " + alertes + " en alerte ou à surveiller";
+    const sel = $("filtre-ue");
+    while (sel.options.length > 1) sel.remove(1);
+    etat.codes.forEach((c) => sel.appendChild(el("option", { value: c, text: nomCompetence(c) + " (" + c + ")" })));
+    etat.filtreUE = "";
+    sel.value = "";
 
-    rendreSynthese();
     rendreLegende();
-    rendreTableau();
+    rendreTout();
 
     $("connexion").hidden = true;
     $("resultats").hidden = false;
@@ -420,10 +679,12 @@
 
   function deconnecter() {
     etat.donnees = null;
+    etat.ouverts = {};
     $("resultats").hidden = true;
     $("connexion").hidden = false;
     $("mdp").value = "";
     $("corps").textContent = "";
+    $("corps-matieres").textContent = "";
     $("synthese").textContent = "";
     $("erreur").textContent = "";
     $("mdp").focus();
@@ -452,8 +713,16 @@
     }
   });
 
-  $("recherche").addEventListener("input", (ev) => { etat.recherche = ev.target.value; rendreTableau(); });
-  $("filtre-alertes").addEventListener("change", (ev) => { etat.alertesSeulement = ev.target.checked; rendreTableau(); });
+  $("onglet-etudiants").addEventListener("click", () => { etat.vue = "etudiants"; rendreTout(); });
+  $("onglet-matieres").addEventListener("click", () => { etat.vue = "matieres"; rendreTout(); });
+  $("filtre-ue").addEventListener("change", (ev) => {
+    etat.filtreUE = ev.target.value;
+    if (colonnes().map((c) => c.cle).indexOf(etat.tri.cle) === -1) etat.tri = { cle: "alerte", sens: -1 };
+    rendreTout();
+  });
+  $("recherche").addEventListener("input", (ev) => { etat.recherche = ev.target.value; rendreEtudiants(); });
+  $("filtre-alertes").addEventListener("change", (ev) => { etat.alertesSeulement = ev.target.checked; rendreEtudiants(); });
+  $("filtre-abs").addEventListener("change", (ev) => { etat.absSeulement = ev.target.checked; rendreEtudiants(); });
   $("deconnexion").addEventListener("click", deconnecter);
 </script>
 </body>
