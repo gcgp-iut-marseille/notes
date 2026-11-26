@@ -310,6 +310,12 @@
 
   function ligneNote(matiere, valeur, sousTitre) {
     const aNote = typeof valeur === "number";
+    if (valeur === "ABS" || valeur === "VAL") {
+      return el("li", null, [
+        el("span", null, [matiere].concat(sousTitre ? [el("span", { class: "matiere-date", text: sousTitre })] : [])),
+        el("span", { class: "note discret", text: valeur === "ABS" ? "Absent" : "Validé" })
+      ]);
+    }
     const gauche = el("span", null, [matiere]);
     if (sousTitre) gauche.appendChild(el("span", { class: "matiere-date", text: sousTitre }));
     const droite = aNote
