@@ -65,7 +65,7 @@
   #connexion { padding-top: 8vh; }
   #connexion .discret { margin: 6px 0 28px; }
   label { display: block; font-weight: 500; margin: 0 0 6px; }
-  input {
+  input, select {
     display: block; width: 100%;
     font: inherit; color: inherit;
     background: var(--carte);
@@ -74,7 +74,7 @@
     padding: 12px 14px;
     margin-bottom: 18px;
   }
-  input:focus-visible { border-color: var(--primaire); }
+  input:focus-visible, select:focus-visible { border-color: var(--primaire); }
   .bouton {
     font: inherit; font-weight: 600;
     background: var(--primaire); color: var(--primaire-texte);
@@ -177,6 +177,11 @@
     <h1>Mes notes</h1>
     <p class="discret">BUT1 GCGP, semestre 1</p>
     <form id="formulaire" novalidate>
+      <div id="bloc-nom" hidden>
+        <label for="nom">Nom et prénom</label>
+        <select id="nom" name="nom"><option value="">Choisis ton nom…</option></select>
+      </div>
+
       <label for="numero">Numéro étudiant</label>
       <input id="numero" name="numero" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
 
@@ -377,6 +382,7 @@
     $("resultats").hidden = true;
     $("connexion").hidden = false;
     $("code").value = "";
+    $("nom").value = "";
     $("competences").textContent = "";
     $("recentes").textContent = "";
     $("absences-non-validees").textContent = "";
@@ -385,6 +391,15 @@
     $("code").focus();
   }
 
+  fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "liste" }) })
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success || !d.noms || !d.noms.length) return;
+      d.noms.forEach((n) => { const o = document.createElement("option"); o.value = n; o.textContent = n; $("nom").appendChild(o); });
+      $("bloc-nom").hidden = false;
+    })
+    .catch(() => {});
+
   $("formulaire").addEventListener("submit", async (e) => {
     e.preventDefault();
     const numero = $("numero").value.trim();
@@ -392,6 +407,11 @@
     const erreur = $("erreur");
     erreur.textContent = "";
 
+    const nom = $("nom").value;
+    if (!$("bloc-nom").hidden && !nom) {
+      erreur.textContent = "Choisis ton nom dans la liste.";
+      return;
+    }
     if (!numero || !code) {
       erreur.textContent = "Renseigne ton numéro étudiant et ton code personnel.";
       return;
@@ -401,7 +421,7 @@
     bouton.disabled = true;
     bouton.textContent = "Connexion…";
     try {
-      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ numero: numero, code: code }) });
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ numero: numero, code: code, nom: nom }) });
       const data = await res.json();
       if (data.success) {
         afficher(data, numero);
