@@ -194,6 +194,10 @@
   .distri span.r { background: var(--echec); }
   .distri span.m { background: var(--vigilance); }
   .distri-lib { font-size: 0.75rem; color: var(--encre-douce); white-space: nowrap; }
+  .distri-duo { display: flex; gap: 16px; }
+  .distri.ref span { opacity: 0.45; }
+  .ue-moyenne.delta-bas { color: var(--echec); }
+  .ue-moyenne.delta-haut { color: var(--valide); }
   .badge.examen { background: var(--vigilance-fond); color: var(--vigilance); }
   .legende { margin-top: 12px; max-width: 80ch; }
   .legende p + p { margin-top: 6px; }
@@ -231,6 +235,13 @@
     </div>
 
     <div class="filtres">
+      <div class="champ">
+        <label for="filtre-promo" class="discret">Promotion</label>
+        <select id="filtre-promo">
+          <option value="">2026-2027 (en cours)</option>
+          <option value="2526">2025-2026</option>
+        </select>
+      </div>
       <div class="champ">
         <label for="filtre-ue" class="discret">Compétence</label>
         <select id="filtre-ue"><option value="">Toutes les compétences</option></select>
@@ -292,7 +303,9 @@
     alertesSeulement: false,
     absSeulement: false,
     recherche: "",
-    ouverts: {}
+    ouverts: {},
+    mdp: "",
+    promo: ""
   };
 
   function el(tag, props, enfants) {
@@ -337,6 +350,7 @@
     return m;
   }
 
+  const anciennePromo = () => etat.promo === "2526";
   const heuresNJ = (e) => (e.absences ? e.absences.heuresNonValidees || 0 : 0);
 
   /* ---------- Synthèse ---------- */
@@ -376,7 +390,7 @@
     const cols = [{ cle: "nom", libelle: "Étudiant" }];
     if (!etat.filtreUE) cols.push({ cle: "mg", libelle: "Moyenne générale" });
     codesAffiches().forEach((c) => cols.push({ cle: c, libelle: nomCompetence(c) + " (" + c + ")" }));
-    cols.push({ cle: "abs", libelle: "Absences non justifiées" });
+    if (!anciennePromo()) cols.push({ cle: "abs", libelle: "Absences non justifiées" });
     cols.push({ cle: "alerte", libelle: "Alerte" });
     return cols;
   }
@@ -475,7 +489,7 @@
     ]);
     if ((a.detailNonValidees || []).length) blocAbs.appendChild(ulA);
     else blocAbs.appendChild(el("p", { class: "discret", text: "Aucune absence non justifiée." }));
-    grille.appendChild(blocAbs);
+    if (!anciennePromo()) grille.appendChild(blocAbs);
     return grille;
   }
 
@@ -514,7 +528,7 @@
         tr.appendChild(tdM);
       }
       codesAffiches().forEach((c) => tr.appendChild(celluleCompetence(e.competences[c])));
-      tr.appendChild(celluleAbsences(e));
+      if (!anciennePromo()) tr.appendChild(celluleAbsences(e));
 
       const n = niveauEtudiant(e);
       const tdA = el("td");
@@ -541,10 +555,16 @@
     { cle: "ecartType", libelle: "Écart-type" },
     { cle: "mediane", libelle: "Médiane" },
     { cle: "plage", libelle: "Min – max" },
+    { cle: "refMoyenne", libelle: "Promo 25-26" },
+    { cle: "delta", libelle: "Écart" },
     { cle: "pctSous10", libelle: "Sous 10" },
     { cle: "abs", libelle: "Absents" },
     { cle: "distribution", libelle: "Répartition des notes" }
   ];
+
+  function colsMat() {
+    return COLS_MAT.filter((c) => !(anciennePromo() && (c.cle === "refMoyenne" || c.cle === "delta")));
+  }
 
   function lignesMatieres() {
     const stats = etat.donnees.statsMatieres || {};
@@ -557,21 +577,24 @@
       .filter((m) => stats[m].n > 0 || stats[m].abs > 0 || stats[m].val > 0)
       .map((m) => {
         const s = stats[m];
-        return Object.assign({ matiere: m, pctSous10: s.n ? s.sous10 / s.n : null, plage: s.min }, s);
+        const ref = (etat.donnees.reference2526 || {})[m] || null;
+        const refMoyenne = ref && typeof ref.moyenne === "number" ? ref.moyenne : null;
+        return Object.assign({ matiere: m, pctSous10: s.n ? s.sous10 / s.n : null, plage: s.min,
+          ref: ref, refMoyenne: refMoyenne, delta: (refMoyenne !== null && s.moyenne !== null) ? s.moyenne - refMoyenne : null }, s);
       });
   }
 
   function rendreMatieres() {
     const tr = $("entetes-matieres");
     tr.textContent = "";
-    COLS_MAT.forEach((col) => {
+    colsMat().forEach((col) => {
       const th = el("th", { scope: "col" });
       if (col.cle === "distribution") { th.textContent = col.libelle; tr.appendChild(th); return; }
       if (etat.triMat.cle === col.cle) th.setAttribute("aria-sort", etat.triMat.sens > 0 ? "ascending" : "descending");
       const b = el("button", { type: "button", text: col.libelle });
       b.addEventListener("click", () => {
         if (etat.triMat.cle === col.cle) etat.triMat.sens = -etat.triMat.sens;
-        else etat.triMat = { cle: col.cle, sens: col.cle === "matiere" ? 1 : (col.cle === "moyenne" || col.cle === "mediane" || col.cle === "plage" ? 1 : -1) };
+        else etat.triMat = { cle: col.cle, sens: col.cle === "matiere" ? 1 : (col.cle === "moyenne" || col.cle === "mediane" || col.cle === "plage" || col.cle === "delta" ? 1 : -1) };
         rendreMatieres();
       });
       th.appendChild(b);
@@ -590,7 +613,7 @@
     });
 
     if (!lignes.length) {
-      const trv = el("tr"); const td = el("td", { class: "vide", colspan: String(COLS_MAT.length), text: "Aucune note n’a encore été importée." });
+      const trv = el("tr"); const td = el("td", { class: "vide", colspan: String(colsMat().length), text: "Aucune note n’a encore été importée." });
       trv.appendChild(td); corps.appendChild(trv);
       return;
     }
@@ -606,6 +629,8 @@
         el("td", { class: "ue", text: m.ecartType === null ? "—" : nb2.format(m.ecartType) }),
         el("td", { class: "ue", text: m.mediane === null ? "—" : nb1.format(m.mediane) }),
         el("td", { class: "ue", text: m.min === null ? "—" : nb1.format(m.min) + " – " + nb1.format(m.max) }),
+        anciennePromo() ? "" : el("td", { class: "ue" }, m.ref ? [el("span", { text: nb2.format(m.ref.moyenne) }), el("span", { class: "ue-detail", text: m.ref.n + " notes" })] : ["—"]),
+        anciennePromo() ? "" : celluleDelta(m.delta),
         el("td", { class: "ue", text: m.pctSous10 === null ? "—" : Math.round(m.pctSous10 * 100) + " % (" + m.sous10 + ")" }),
         el("td", { class: "ue", text: String(m.abs) + (m.val ? " · " + m.val + " val." : "") }),
         el("td", null, [histogramme(m)])
@@ -614,16 +639,35 @@
     });
   }
 
-  function histogramme(m) {
-    const max = Math.max.apply(null, m.distribution.concat([1]));
+  function celluleDelta(d) {
+    const td = el("td", { class: "ue" });
+    if (d === null) { td.textContent = "—"; return td; }
+    const cl = d <= -1 ? "delta-bas" : (d >= 1 ? "delta-haut" : "");
+    td.appendChild(el("span", { class: "ue-moyenne " + cl, text: signe1.format(d) + " pt" }));
+    return td;
+  }
+
+  function barres(distribution, n, classeBase) {
     const tr = etat.donnees.tranches || ["0–4", "4–8", "8–12", "12–16", "16–20"];
-    const boite = el("div", { class: "distri", role: "img", "aria-label": "Répartition par tranche : " + m.distribution.map((v, i) => tr[i] + " : " + v).join(", ") });
-    m.distribution.forEach((v, i) => {
+    const part = distribution.map((v) => (n ? v / n : 0));
+    const max = Math.max.apply(null, part.concat([0.01]));
+    const boite = el("div", { class: "distri " + classeBase, role: "img", "aria-label": "Répartition par tranche : " + distribution.map((v, i) => tr[i] + " : " + v).join(", ") });
+    distribution.forEach((v, i) => {
       const barre = el("span", { class: i < 2 ? "r" : (i === 2 ? "m" : ""), title: tr[i] + " : " + v + " étudiants" });
-      barre.style.height = Math.max(2, Math.round((v / max) * 34)) + "px";
+      barre.style.height = Math.max(2, Math.round((part[i] / max) * 30)) + "px";
       boite.appendChild(barre);
     });
-    return el("div", null, [boite, el("div", { class: "distri-lib", text: m.distribution.join(" · ") })]);
+    return boite;
+  }
+
+  function histogramme(m) {
+    const cadre = el("div", { class: "distri-duo" }, [
+      el("div", null, [barres(m.distribution, m.n, ""), el("div", { class: "distri-lib", text: "2026-27 : " + m.distribution.join(" · ") })])
+    ]);
+    if (m.ref && m.ref.distribution) {
+      cadre.appendChild(el("div", null, [barres(m.ref.distribution, m.ref.n, "ref"), el("div", { class: "distri-lib", text: "25-26 : " + m.ref.distribution.join(" · ") })]));
+    }
+    return cadre;
   }
 
   /* ---------- Affichage général ---------- */
@@ -640,7 +684,7 @@
       "Moyenne générale : moyenne simple des moyennes de compétence." }));
     l.appendChild(el("p", { text:
       "Absences non justifiées : en rouge au-delà de " + FRANCHISE_H + " h (franchise). Matière « à examiner » : moyenne sous " + etat.seuils.validation +
-      " ou au moins la moitié des étudiants sous " + etat.seuils.validation + ". Répartition : tranches de 4 points (0–4, 4–8, 8–12, 12–16, 16–20)." }));
+      " ou au moins la moitié des étudiants sous " + etat.seuils.validation + ". Répartition : tranches de 4 points (0–4, 4–8, 8–12, 12–16, 16–20), hauteur des barres proportionnelle à la part de la promo ; barres pâles : promo 2025-26. Écart : moyenne de cette année moins celle de 2025-26 (rouge si au moins 1 point en dessous, vert si au moins 1 point au-dessus)." }));
     if (etat.donnees.erreurAbsences) {
       l.appendChild(el("p", { text: "Absences indisponibles : " + etat.donnees.erreurAbsences }));
     }
@@ -649,14 +693,14 @@
   function rendreTout() {
     const n = etat.donnees.etudiants.length;
     const alertes = etat.donnees.etudiants.filter((e) => niveauEtudiant(e) !== "aucune").length;
-    $("resume").textContent = n + " étudiants, " + alertes + " en alerte ou à surveiller";
+    $("resume").textContent = (anciennePromo() ? "Promotion 2025-2026 · " : "Promotion 2026-2027 · ") + n + " étudiants, " + alertes + " en alerte ou à surveiller";
     rendreSynthese();
     const vueEtu = etat.vue === "etudiants";
     $("vue-etudiants").hidden = !vueEtu;
     $("vue-matieres").hidden = vueEtu;
     $("bloc-recherche").hidden = !vueEtu;
     $("bloc-alertes").hidden = !vueEtu;
-    $("bloc-absences").hidden = !vueEtu;
+    $("bloc-absences").hidden = !vueEtu || anciennePromo();
     $("onglet-etudiants").setAttribute("aria-selected", vueEtu ? "true" : "false");
     $("onglet-matieres").setAttribute("aria-selected", vueEtu ? "false" : "true");
     if (vueEtu) rendreEtudiants(); else rendreMatieres();
@@ -673,6 +717,8 @@
     etat.codes.forEach((c) => sel.appendChild(el("option", { value: c, text: nomCompetence(c) + " (" + c + ")" })));
     etat.filtreUE = "";
     sel.value = "";
+    if (colonnes().map((c) => c.cle).indexOf(etat.tri.cle) === -1) etat.tri = { cle: "alerte", sens: -1 };
+    if (colsMat().map((c) => c.cle).indexOf(etat.triMat.cle) === -1) etat.triMat = { cle: "moyenne", sens: 1 };
 
     rendreLegende();
     rendreTout();
@@ -684,6 +730,8 @@
 
   function deconnecter() {
     etat.donnees = null;
+    etat.mdp = "";
+    etat.promo = "";
     etat.ouverts = {};
     $("resultats").hidden = true;
     $("connexion").hidden = false;
@@ -693,6 +741,11 @@
     $("synthese").textContent = "";
     $("erreur").textContent = "";
     $("mdp").focus();
+  }
+
+  async function charger(promo) {
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "dashboard", motDePasse: etat.mdp, promo: promo }) });
+    return res.json();
   }
 
   $("formulaire").addEventListener("submit", async (ev) => {
@@ -706,15 +759,30 @@
     bouton.disabled = true;
     bouton.textContent = "Chargement…";
     try {
-      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "dashboard", motDePasse: mdp }) });
-      const data = await res.json();
+      etat.mdp = mdp;
+      etat.promo = "";
+      $("filtre-promo").value = "";
+      const data = await charger("");
       if (data.success) afficher(data);
-      else erreur.textContent = data.error || "Connexion impossible.";
+      else { erreur.textContent = data.error || "Connexion impossible."; etat.mdp = ""; }
     } catch (err) {
       erreur.textContent = "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.";
     } finally {
       bouton.disabled = false;
       bouton.textContent = "Ouvrir le tableau de bord";
+    }
+  });
+
+  $("filtre-promo").addEventListener("change", async (ev) => {
+    const voulu = ev.target.value;
+    $("resume").textContent = "Chargement de la promotion…";
+    try {
+      const data = await charger(voulu);
+      if (data.success) { etat.promo = voulu; etat.ouverts = {}; afficher(data); }
+      else { ev.target.value = etat.promo; $("resume").textContent = data.error || "Chargement impossible."; }
+    } catch (err) {
+      ev.target.value = etat.promo;
+      $("resume").textContent = "Impossible de joindre le serveur.";
     }
   });
 
