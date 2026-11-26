@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mes notes — BUT1 GCGP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fond: #F2F5F6;
+    --carte: #FFFFFF;
+    --encre: #12262D;
+    --encre-douce: #4B5F67;
+    --trait: #D3DDE1;
+    --primaire: #0F4C5C;
+    --primaire-texte: #FFFFFF;
+    --valide: #17724F;
+    --valide-fond: #E1F1E9;
+    --echec: #A8321F;
+    --echec-fond: #F8E3DE;
+    --attente-fond: #E6ECEE;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #0E181C;
+      --carte: #16242A;
+      --encre: #E8F0F2;
+      --encre-douce: #9DB0B8;
+      --trait: #2B3E46;
+      --primaire: #5FB3C4;
+      --primaire-texte: #0E181C;
+      --valide: #5FD0A0;
+      --valide-fond: #173A2D;
+      --echec: #FF9C8A;
+      --echec-fond: #46211B;
+      --attente-fond: #22343B;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+  [hidden] { display: none !important; }
+
+  h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 600; margin: 0; }
+  h2 { font-size: 1.0625rem; font-weight: 600; margin: 32px 0 12px; }
+  p { margin: 0; }
+  .discret { color: var(--encre-douce); font-size: 0.875rem; }
+
+  :focus-visible { outline: 3px solid var(--primaire); outline-offset: 2px; }
+
+  /* ---------- Connexion ---------- */
+  #connexion { padding-top: 8vh; }
+  #connexion .discret { margin: 6px 0 28px; }
+  label { display: block; font-weight: 500; margin: 0 0 6px; }
+  input {
+    display: block; width: 100%;
+    font: inherit; color: inherit;
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+  input:focus-visible { border-color: var(--primaire); }
+  .bouton {
+    font: inherit; font-weight: 600;
+    background: var(--primaire); color: var(--primaire-texte);
+    border: 0; border-radius: 10px;
+    padding: 12px 20px; cursor: pointer; width: 100%;
+  }
+  .bouton:disabled { opacity: 0.6; cursor: progress; }
+  .lien {
+    font: inherit; font-size: 0.875rem;
+    background: none; border: 0; padding: 4px 0;
+    color: var(--primaire); cursor: pointer; text-decoration: underline;
+  }
+  #erreur { color: var(--echec); font-weight: 500; margin-top: 14px; min-height: 1.5em; }
+  #aide { margin-top: 24px; }
+
+  /* ---------- En-tête ---------- */
+  .entete { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .entete .discret { margin-top: 2px; }
+
+  /* ---------- Compétences ---------- */
+  .competence {
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 14px;
+    padding: 16px 16px 14px;
+    margin-bottom: 12px;
+  }
+  .competence-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .competence-nom { font-weight: 600; }
+  .competence-code { color: var(--encre-douce); font-size: 0.875rem; }
+  .moyenne { font-size: 2.25rem; line-height: 1; font-weight: 600; margin: 14px 0 14px; }
+  .moyenne small { font-size: 0.9375rem; font-weight: 400; color: var(--encre-douce); margin-left: 4px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.8125rem; font-weight: 600;
+    border-radius: 999px; padding: 4px 10px 4px 8px;
+    white-space: nowrap;
+  }
+  .badge svg { width: 14px; height: 14px; flex: none; }
+  .badge.ok { background: var(--valide-fond); color: var(--valide); }
+  .badge.ko { background: var(--echec-fond); color: var(--echec); }
+  .badge.attente { background: var(--attente-fond); color: var(--encre-douce); }
+
+  /* Échelle 0–20 avec le seuil de validation à 10 */
+  .echelle { position: relative; height: 10px; background: var(--attente-fond); border-radius: 999px; }
+  .echelle-remplissage {
+    height: 100%; width: 0; border-radius: 999px;
+    transition: width 700ms cubic-bezier(.2,.7,.2,1);
+  }
+  .ok .echelle-remplissage { background: var(--valide); }
+  .ko .echelle-remplissage { background: var(--echec); }
+  .echelle-seuil {
+    position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px;
+    background: var(--encre); border-radius: 1px;
+  }
+  .echelle-graduations {
+    display: flex; justify-content: space-between;
+    font-size: 0.75rem; color: var(--encre-douce); margin-top: 6px;
+  }
+  .echelle-graduations span:nth-child(2) { transform: translateX(0); }
+  @media (prefers-reduced-motion: reduce) {
+    .echelle-remplissage { transition: none; }
+  }
+
+  /* ---------- Listes de notes ---------- */
+  .liste {
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 14px;
+    margin: 0; padding: 0; list-style: none;
+  }
+  .liste li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--trait);
+  }
+  .liste li:first-child { border-top: 0; }
+  .note { font-weight: 600; white-space: nowrap; }
+  .note small { font-weight: 400; color: var(--encre-douce); margin-left: 2px; }
+  .note.basse { color: var(--echec); }
+  .matiere-date { display: block; font-size: 0.8125rem; color: var(--encre-douce); }
+
+  details > summary {
+    list-style: none; cursor: pointer;
+    font-size: 1.0625rem; font-weight: 600; margin: 32px 0 12px;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "▾"; margin-left: 8px; color: var(--encre-douce); }
+  details:not([open]) > summary::after { content: "▸"; }
+
+  .mention { margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- Écran de connexion -->
+  <section id="connexion">
+    <h1>Mes notes</h1>
+    <p class="discret">BUT1 GCGP, semestre 1</p>
+    <form id="formulaire" novalidate>
+      <label for="numero">Numéro étudiant</label>
+      <input id="numero" name="numero" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+
+      <label for="code">Code personnel</label>
+      <input id="code" name="code" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" required>
+
+      <button id="envoyer" class="bouton" type="submit">Voir mes notes</button>
+      <p id="erreur" role="alert" aria-live="polite"></p>
+    </form>
+    <p id="aide" class="discret">Code perdu ou oublié : contacte le directeur des études.</p>
+  </section>
+
+  <!-- Écran des notes -->
+  <section id="resultats" hidden>
+    <div class="entete">
+      <div>
+        <h1>Mes notes</h1>
+        <p class="discret" id="identifiant"></p>
+      </div>
+      <button id="deconnexion" class="lien" type="button">Se déconnecter</button>
+    </div>
+
+    <h2>Mes compétences</h2>
+    <div id="competences"></div>
+    <p class="discret mention" id="mention-bonus" hidden></p>
+
+    <div id="bloc-recentes" hidden>
+      <h2>Mes dernières notes</h2>
+      <ul class="liste" id="recentes"></ul>
+    </div>
+
+    <details open>
+      <summary id="titre-matieres">Toutes les matières</summary>
+      <ul class="liste" id="matieres"></ul>
+    </details>
+  </section>
+
+</main>
+
+<script>
+  // Adresse du script Google Apps Script (déploiement « Application Web »)
+  const API_URL = "https://script.google.com/macros/s/AKfycbwG9ZYj3hVWwxh5ut-6gavLSQ9Phql1qcBwdDDQUCqtJcj6Y0D9QOrJNNnkLL5Xadik/exec";
+
+  const SEUIL = 10;
+  const NOMS_COMPETENCES = { "UE1.1": "Produire", "UE1.2": "Concevoir", "UE1.3": "Contrôler" };
+  const CHAMPS_HORS_MATIERES = ["Total Bonus", "Nom d’utilisateur"];
+
+  const nombre = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
+  const dateCourte = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+
+  const $ = (id) => document.getElementById(id);
+
+  function el(tag, props, enfants) {
+    const n = document.createElement(tag);
+    if (props) {
+      for (const k in props) {
+        if (k === "class") n.className = props[k];
+        else if (k === "text") n.textContent = props[k];
+        else n.setAttribute(k, props[k]);
+      }
+    }
+    (enfants || []).forEach((e) => n.appendChild(typeof e === "string" ? document.createTextNode(e) : e));
+    return n;
+  }
+
+  function dateRelative(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    const jours = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (jours <= 0) return "Aujourd’hui";
+    if (jours === 1) return "Hier";
+    if (jours < 14) return "Il y a " + jours + " jours";
+    return "Le " + dateCourte.format(d);
+  }
+
+  function iconeValide() {
+    return '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  function iconeEchec() {
+    return '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  }
+
+  function carteCompetence(code, donnees) {
+    const moyenne = donnees && typeof donnees.moyenne === "number" ? donnees.moyenne : null;
+    const etat = moyenne === null ? "attente" : (donnees.validee ? "ok" : "ko");
+
+    const badge = el("span", { class: "badge " + etat });
+    if (etat === "ok") { badge.innerHTML = iconeValide(); badge.appendChild(document.createTextNode("Validée")); }
+    else if (etat === "ko") { badge.innerHTML = iconeEchec(); badge.appendChild(document.createTextNode("Non validée")); }
+    else { badge.textContent = "En attente"; }
+
+    const tete = el("div", { class: "competence-tete" }, [
+      el("div", null, [
+        el("p", { class: "competence-nom", text: NOMS_COMPETENCES[code] || code }),
+        el("p", { class: "competence-code", text: code })
+      ]),
+      badge
+    ]);
+
+    const carte = el("div", { class: "competence " + etat }, [tete]);
+
+    if (moyenne !== null) {
+      carte.appendChild(el("p", { class: "moyenne" }, [nombre.format(moyenne), el("small", { text: "/20" })]));
+
+      const remplissage = el("div", { class: "echelle-remplissage" });
+      const echelle = el("div", {
+        class: "echelle", role: "img",
+        "aria-label": "Moyenne de " + nombre.format(moyenne) + " sur 20, seuil de validation à " + SEUIL
+      }, [remplissage, el("div", { class: "echelle-seuil" })]);
+      carte.appendChild(echelle);
+      carte.appendChild(el("div", { class: "echelle-graduations", "aria-hidden": "true" }, [
+        el("span", { text: "0" }), el("span", { text: "Seuil " + SEUIL }), el("span", { text: "20" })
+      ]));
+
+      const largeur = Math.max(0, Math.min(100, (moyenne / 20) * 100));
+      requestAnimationFrame(() => requestAnimationFrame(() => { remplissage.style.width = largeur + "%"; }));
+    }
+    return carte;
+  }
+
+  function ligneNote(matiere, valeur, sousTitre) {
+    const aNote = typeof valeur === "number";
+    const gauche = el("span", null, [matiere]);
+    if (sousTitre) gauche.appendChild(el("span", { class: "matiere-date", text: sousTitre }));
+    const droite = aNote
+      ? el("span", { class: "note" + (valeur < SEUIL ? " basse" : "") }, [nombre.format(valeur), el("small", { text: "/20" })])
+      : el("span", { class: "note discret", text: "—" });
+    return el("li", null, [gauche, droite]);
+  }
+
+  function afficher(reponse, numero) {
+    $("identifiant").textContent = numero;
+
+    const conteneur = $("competences");
+    conteneur.textContent = "";
+    Object.keys(reponse.competences || {}).forEach((code) => {
+      conteneur.appendChild(carteCompetence(code, reponse.competences[code]));
+    });
+
+    const bonus = Number((reponse.notes || {})["Total Bonus"]) || 0;
+    const mention = $("mention-bonus");
+    if (bonus > 0) {
+      mention.textContent = "Un bonus de +" + nombre.format(bonus) + " point est inclus dans tes moyennes de compétences.";
+      if (bonus > 1) mention.textContent = mention.textContent.replace("point est", "points sont");
+      mention.hidden = false;
+    } else {
+      mention.hidden = true;
+    }
+
+    const recentes = $("recentes");
+    recentes.textContent = "";
+    const listeRecentes = reponse.recentes || [];
+    listeRecentes.forEach((r) => recentes.appendChild(ligneNote(r.matiere, r.note, dateRelative(r.date))));
+    $("bloc-recentes").hidden = listeRecentes.length === 0;
+
+    const matieres = $("matieres");
+    matieres.textContent = "";
+    const notes = reponse.notes || {};
+    let compte = 0;
+    Object.keys(notes).forEach((m) => {
+      if (CHAMPS_HORS_MATIERES.indexOf(m) !== -1) return;
+      matieres.appendChild(ligneNote(m, notes[m]));
+      compte++;
+    });
+    $("titre-matieres").textContent = "Toutes les matières (" + compte + ")";
+
+    $("connexion").hidden = true;
+    $("resultats").hidden = false;
+    window.scrollTo(0, 0);
+  }
+
+  function deconnecter() {
+    $("resultats").hidden = true;
+    $("connexion").hidden = false;
+    $("code").value = "";
+    $("competences").textContent = "";
+    $("recentes").textContent = "";
+    $("matieres").textContent = "";
+    $("erreur").textContent = "";
+    $("code").focus();
+  }
+
+  $("formulaire").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const numero = $("numero").value.trim();
+    const code = $("code").value.trim();
+    const erreur = $("erreur");
+    erreur.textContent = "";
+
+    if (!numero || !code) {
+      erreur.textContent = "Renseigne ton numéro étudiant et ton code personnel.";
+      return;
+    }
+
+    const bouton = $("envoyer");
+    bouton.disabled = true;
+    bouton.textContent = "Connexion…";
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ numero: numero, code: code }) });
+      const data = await res.json();
+      if (data.success) {
+        afficher(data, numero);
+      } else {
+        erreur.textContent = data.error || "Connexion impossible.";
+      }
+    } catch (err) {
+      erreur.textContent = "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.";
+    } finally {
+      bouton.disabled = false;
+      bouton.textContent = "Voir mes notes";
+    }
+  });
+
+  $("deconnexion").addEventListener("click", deconnecter);
+</script>
+</body>
+</html>
