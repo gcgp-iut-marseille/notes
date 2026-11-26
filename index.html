@@ -219,10 +219,10 @@
       <ul class="liste" id="absences-non-validees"></ul>
     </div>
 
-    <details open>
-      <summary id="titre-matieres">Toutes les matières</summary>
-      <ul class="liste" id="matieres"></ul>
-    </details>
+    <div id="bloc-matieres">
+      <h2>Mes notes par compétence</h2>
+      <div id="matieres"></div>
+    </div>
   </section>
 
 </main>
@@ -365,13 +365,22 @@
     const matieres = $("matieres");
     matieres.textContent = "";
     const notes = reponse.notes || {};
-    let compte = 0;
-    Object.keys(notes).forEach((m) => {
-      if (CHAMPS_HORS_MATIERES.indexOf(m) !== -1) return;
-      matieres.appendChild(ligneNote(m, notes[m]));
-      compte++;
+    const parUE = reponse.matieresParCompetence || {};
+    const rangees = {};
+    Object.keys(parUE).forEach((code) => {
+      const liste = el("ul", { class: "liste" });
+      parUE[code].forEach((m) => { rangees[m.matiere] = true; liste.appendChild(ligneNote(m.matiere, m.note)); });
+      matieres.appendChild(el("details", { open: "" }, [
+        el("summary", { text: (NOMS_COMPETENCES[code] || code) + " (" + code + ")" }),
+        liste
+      ]));
     });
-    $("titre-matieres").textContent = "Toutes les matières (" + compte + ")";
+    const autres = Object.keys(notes).filter((m) => CHAMPS_HORS_MATIERES.indexOf(m) === -1 && !rangees[m]);
+    if (autres.length) {
+      const liste = el("ul", { class: "liste" });
+      autres.forEach((m) => liste.appendChild(ligneNote(m, notes[m])));
+      matieres.appendChild(el("details", { open: "" }, [el("summary", { text: "Autres" }), liste]));
+    }
 
     $("connexion").hidden = true;
     $("resultats").hidden = false;
