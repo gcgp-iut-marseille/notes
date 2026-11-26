@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tableau de bord des notes — BUT1 GCGP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fond: #F2F5F6;
+    --carte: #FFFFFF;
+    --encre: #12262D;
+    --encre-douce: #4B5F67;
+    --trait: #D3DDE1;
+    --primaire: #0F4C5C;
+    --primaire-texte: #FFFFFF;
+    --valide: #17724F;
+    --echec: #A8321F;
+    --echec-fond: #F8E3DE;
+    --vigilance: #8A5A00;
+    --vigilance-fond: #FBEFD3;
+    --survol: #EAF0F2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #0E181C;
+      --carte: #16242A;
+      --encre: #E8F0F2;
+      --encre-douce: #9DB0B8;
+      --trait: #2B3E46;
+      --primaire: #5FB3C4;
+      --primaire-texte: #0E181C;
+      --valide: #5FD0A0;
+      --echec: #FF9C8A;
+      --echec-fond: #46211B;
+      --vigilance: #F2C46B;
+      --vigilance-fond: #3F3216;
+      --survol: #1D3038;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 56px; }
+  [hidden] { display: none !important; }
+  h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 600; margin: 0; }
+  h2 { font-size: 1.0625rem; font-weight: 600; margin: 32px 0 12px; }
+  p { margin: 0; }
+  .discret { color: var(--encre-douce); font-size: 0.875rem; }
+  :focus-visible { outline: 3px solid var(--primaire); outline-offset: 2px; }
+
+  /* ---------- Connexion ---------- */
+  #connexion { max-width: 420px; padding-top: 8vh; }
+  #connexion .discret { margin: 6px 0 28px; }
+  label { display: block; font-weight: 500; margin: 0 0 6px; }
+  input[type="password"], input[type="search"] {
+    display: block; width: 100%;
+    font: inherit; color: inherit;
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  #connexion input { margin-bottom: 18px; padding: 12px 14px; }
+  input:focus-visible { border-color: var(--primaire); }
+  .bouton {
+    font: inherit; font-weight: 600;
+    background: var(--primaire); color: var(--primaire-texte);
+    border: 0; border-radius: 10px;
+    padding: 12px 20px; cursor: pointer; width: 100%;
+  }
+  .bouton:disabled { opacity: 0.6; cursor: progress; }
+  .lien {
+    font: inherit; font-size: 0.875rem;
+    background: none; border: 0; padding: 4px 0;
+    color: var(--primaire); cursor: pointer; text-decoration: underline;
+  }
+  #erreur { color: var(--echec); font-weight: 500; margin-top: 14px; min-height: 1.5em; }
+
+  /* ---------- En-tête ---------- */
+  .entete { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+
+  /* ---------- Synthèse par compétence ---------- */
+  .synthese { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .synthese-carte {
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .synthese-titre { font-weight: 600; }
+  .synthese-code { color: var(--encre-douce); font-size: 0.875rem; }
+  .synthese-moyenne { font-size: 2rem; line-height: 1; font-weight: 600; margin: 12px 0 10px; }
+  .synthese-moyenne small { font-size: 0.875rem; font-weight: 400; color: var(--encre-douce); margin-left: 4px; }
+  .synthese dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 0.875rem; }
+  .synthese dt { color: var(--encre-douce); }
+  .synthese dd { margin: 0; font-weight: 500; text-align: right; }
+
+  /* ---------- Filtres ---------- */
+  .filtres { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 0 0 12px; }
+  .filtres .recherche { flex: 1 1 220px; max-width: 320px; }
+  .case { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; margin: 0; cursor: pointer; }
+  .case input { width: 18px; height: 18px; margin: 0; accent-color: var(--primaire); }
+
+  /* ---------- Tableau ---------- */
+  .tableau-cadre {
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 14px;
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 620px; }
+  th, td { text-align: left; padding: 10px 16px; border-top: 1px solid var(--trait); vertical-align: top; }
+  thead th { border-top: 0; font-weight: 600; font-size: 0.875rem; white-space: nowrap; padding-top: 12px; padding-bottom: 12px; }
+  thead button {
+    font: inherit; font-weight: inherit; color: inherit;
+    background: none; border: 0; padding: 0; cursor: pointer;
+  }
+  thead button:hover { color: var(--primaire); }
+  th[aria-sort="ascending"] button::after { content: " ▲"; font-size: 0.7em; }
+  th[aria-sort="descending"] button::after { content: " ▼"; font-size: 0.7em; }
+  tbody tr:hover { background: var(--survol); }
+  .etu-nom { font-weight: 500; }
+  .etu-num { color: var(--encre-douce); font-size: 0.8125rem; }
+  td.ue { white-space: nowrap; }
+  .ue-moyenne { font-weight: 600; }
+  .ue-moyenne.basse { color: var(--echec); }
+  .ue-detail { display: block; font-size: 0.8125rem; color: var(--encre-douce); }
+  td.ue.niveau-forte { background: var(--echec-fond); }
+  td.ue.niveau-legere { background: var(--vigilance-fond); }
+
+  .badge {
+    display: inline-block; white-space: nowrap;
+    font-size: 0.8125rem; font-weight: 600;
+    border-radius: 999px; padding: 4px 10px;
+  }
+  .badge.forte { background: var(--echec-fond); color: var(--echec); }
+  .badge.legere { background: var(--vigilance-fond); color: var(--vigilance); }
+  .vide { text-align: center; color: var(--encre-douce); padding: 28px 16px; }
+  .legende { margin-top: 12px; max-width: 80ch; }
+  .legende p + p { margin-top: 6px; }
+</style>
+</head>
+<body>
+<main>
+
+  <section id="connexion">
+    <h1>Tableau de bord des notes</h1>
+    <p class="discret">BUT1 GCGP, semestre 1</p>
+    <form id="formulaire" novalidate>
+      <label for="mdp">Mot de passe enseignant</label>
+      <input id="mdp" type="password" autocomplete="current-password" required>
+      <button id="envoyer" class="bouton" type="submit">Ouvrir le tableau de bord</button>
+      <p id="erreur" role="alert" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section id="resultats" hidden>
+    <div class="entete">
+      <div>
+        <h1>Tableau de bord des notes</h1>
+        <p class="discret" id="resume"></p>
+      </div>
+      <button id="deconnexion" class="lien" type="button">Se déconnecter</button>
+    </div>
+
+    <h2>La promotion par compétence</h2>
+    <div class="synthese" id="synthese"></div>
+
+    <h2>Étudiants</h2>
+    <div class="filtres">
+      <div class="recherche">
+        <label for="recherche" class="discret" style="margin-bottom:4px">Rechercher un étudiant</label>
+        <input id="recherche" type="search" placeholder="Nom ou numéro" autocomplete="off">
+      </div>
+      <label class="case"><input id="filtre-alertes" type="checkbox"> Alertes seulement</label>
+    </div>
+
+    <div class="tableau-cadre">
+      <table>
+        <thead>
+          <tr id="entetes"></tr>
+        </thead>
+        <tbody id="corps"></tbody>
+      </table>
+    </div>
+
+    <div class="legende discret" id="legende"></div>
+  </section>
+
+</main>
+
+<script>
+  // Adresse du script Google Apps Script (déploiement « Application Web »)
+  const API_URL = "https://script.google.com/macros/s/AKfycbwG9ZYj3hVWwxh5ut-6gavLSQ9Phql1qcBwdDDQUCqtJcj6Y0D9QOrJNNnkLL5Xadik/exec";
+
+  const NOMS_COMPETENCES = { "UE1.1": "Produire", "UE1.2": "Concevoir", "UE1.3": "Contrôler" };
+  const RANG = { aucune: 0, legere: 1, forte: 2 };
+
+  const nb1 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+  const nb2 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
+  const signe1 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1, signDisplay: "exceptZero" });
+
+  const $ = (id) => document.getElementById(id);
+
+  const etat = {
+    donnees: null,
+    codes: [],
+    seuils: { zscore: -1.5, tendance: -1.5, validation: 10 },
+    tri: { cle: "alerte", sens: -1 },
+    alertesSeulement: false,
+    recherche: ""
+  };
+
+  function el(tag, props, enfants) {
+    const n = document.createElement(tag);
+    if (props) {
+      for (const k in props) {
+        if (k === "class") n.className = props[k];
+        else if (k === "text") n.textContent = props[k];
+        else n.setAttribute(k, props[k]);
+      }
+    }
+    (enfants || []).forEach((e) => n.appendChild(typeof e === "string" ? document.createTextNode(e) : e));
+    return n;
+  }
+
+  function mediane(valeurs) {
+    if (!valeurs.length) return null;
+    const t = valeurs.slice().sort((a, b) => a - b);
+    const m = Math.floor(t.length / 2);
+    return t.length % 2 ? t[m] : (t[m - 1] + t[m]) / 2;
+  }
+
+  function niveauEtudiant(e) {
+    let n = "aucune";
+    etat.codes.forEach((c) => {
+      const a = e.competences[c] && e.competences[c].alerte;
+      if (a && RANG[a] > RANG[n]) n = a;
+    });
+    return n;
+  }
+
+  function zMin(e) {
+    let m = Infinity;
+    etat.codes.forEach((c) => {
+      const z = e.competences[c] && e.competences[c].zscore;
+      if (typeof z === "number" && z < m) m = z;
+    });
+    return m;
+  }
+
+  function nomAffiche(e) { return e.nom || e.numero; }
+
+  /* ---------- Synthèse ---------- */
+  function rendreSynthese() {
+    const conteneur = $("synthese");
+    conteneur.textContent = "";
+    etat.codes.forEach((code) => {
+      const moyennes = etat.donnees.etudiants
+        .map((e) => e.competences[code].moyenne)
+        .filter((v) => typeof v === "number");
+      const stats = etat.donnees.statsClasse[code];
+      const validees = moyennes.filter((v) => v >= etat.seuils.validation).length;
+      const pct = moyennes.length ? Math.round((validees / moyennes.length) * 100) : 0;
+      const alertes = etat.donnees.etudiants.filter((e) => e.competences[code].alerte !== "aucune").length;
+
+      const lignes = [
+        ["Médiane", nb1.format(mediane(moyennes)) + "/20"],
+        ["Écart-type", nb2.format(stats.ecartType)],
+        ["Compétence validée", validees + " sur " + moyennes.length + " (" + pct + " %)"],
+        ["Étudiants en alerte ou à surveiller", String(alertes)]
+      ];
+      const dl = el("dl");
+      lignes.forEach((l) => { dl.appendChild(el("dt", { text: l[0] })); dl.appendChild(el("dd", { text: l[1] })); });
+
+      conteneur.appendChild(el("div", { class: "synthese-carte" }, [
+        el("p", { class: "synthese-titre", text: NOMS_COMPETENCES[code] || code }),
+        el("p", { class: "synthese-code", text: code }),
+        el("p", { class: "synthese-moyenne" }, [nb1.format(stats.moyenne), el("small", { text: "/20 en moyenne" })]),
+        dl
+      ]));
+    });
+  }
+
+  /* ---------- Tableau ---------- */
+  function colonnes() {
+    const cols = [{ cle: "nom", libelle: "Étudiant" }];
+    etat.codes.forEach((c) => cols.push({ cle: c, libelle: (NOMS_COMPETENCES[c] || c) + " (" + c + ")" }));
+    cols.push({ cle: "alerte", libelle: "Alerte" });
+    return cols;
+  }
+
+  function rendreEntetes() {
+    const tr = $("entetes");
+    tr.textContent = "";
+    colonnes().forEach((col) => {
+      const th = el("th", { scope: "col" });
+      if (etat.tri.cle === col.cle) th.setAttribute("aria-sort", etat.tri.sens > 0 ? "ascending" : "descending");
+      const b = el("button", { type: "button", text: col.libelle });
+      b.addEventListener("click", () => {
+        if (etat.tri.cle === col.cle) etat.tri.sens = -etat.tri.sens;
+        else etat.tri = { cle: col.cle, sens: col.cle === "alerte" ? -1 : 1 };
+        rendreTableau();
+      });
+      th.appendChild(b);
+      tr.appendChild(th);
+    });
+  }
+
+  function comparer(a, b) {
+    const { cle, sens } = etat.tri;
+    let r = 0;
+    if (cle === "nom") {
+      r = nomAffiche(a).localeCompare(nomAffiche(b), "fr", { numeric: true });
+    } else if (cle === "alerte") {
+      r = RANG[niveauEtudiant(a)] - RANG[niveauEtudiant(b)];
+      if (r === 0) r = zMin(b) - zMin(a);          // à gravité égale, le plus éloigné de la classe d'abord
+      if (!isFinite(r)) r = 0;
+    } else {
+      const va = a.competences[cle].moyenne, vb = b.competences[cle].moyenne;
+      if (va === null && vb === null) r = 0;
+      else if (va === null) return 1;
+      else if (vb === null) return -1;
+      else r = va - vb;
+    }
+    return r * sens;
+  }
+
+  function celluleCompetence(c) {
+    const td = el("td", { class: "ue" + (c.alerte !== "aucune" ? " niveau-" + c.alerte : "") });
+    if (typeof c.moyenne !== "number") { td.textContent = "—"; return td; }
+
+    const basse = c.moyenne < etat.seuils.validation;
+    td.appendChild(el("span", { class: "ue-moyenne" + (basse ? " basse" : ""), text: nb2.format(c.moyenne) }));
+    if (typeof c.zscore === "number") td.appendChild(el("span", { class: "ue-detail", text: "z " + signe1.format(c.zscore) }));
+    if (typeof c.tendance === "number") td.appendChild(el("span", { class: "ue-detail", text: "évol. " + signe1.format(c.tendance) + " pt" }));
+    return td;
+  }
+
+  function rendreTableau() {
+    rendreEntetes();
+    const corps = $("corps");
+    corps.textContent = "";
+
+    const q = etat.recherche.trim().toLowerCase();
+    const liste = etat.donnees.etudiants
+      .filter((e) => !etat.alertesSeulement || niveauEtudiant(e) !== "aucune")
+      .filter((e) => !q || (e.nom + " " + e.numero).toLowerCase().indexOf(q) !== -1)
+      .sort(comparer);
+
+    if (!liste.length) {
+      const tr = el("tr"); const td = el("td", { class: "vide", colspan: String(colonnes().length) });
+      td.textContent = etat.alertesSeulement ? "Aucun étudiant en alerte pour le moment." : "Aucun étudiant ne correspond à la recherche.";
+      tr.appendChild(td); corps.appendChild(tr);
+      return;
+    }
+
+    liste.forEach((e) => {
+      const tr = el("tr");
+      const tdNom = el("td", null, [
+        el("span", { class: "etu-nom", text: nomAffiche(e) }),
+        e.nom ? el("span", { class: "etu-num", text: " " + e.numero }) : ""
+      ]);
+      tr.appendChild(tdNom);
+      etat.codes.forEach((c) => tr.appendChild(celluleCompetence(e.competences[c])));
+
+      const n = niveauEtudiant(e);
+      const tdA = el("td");
+      if (n === "forte") tdA.appendChild(el("span", { class: "badge forte", text: "Alerte" }));
+      else if (n === "legere") tdA.appendChild(el("span", { class: "badge legere", text: "À surveiller" }));
+      else tdA.appendChild(el("span", { class: "discret", text: "—" }));
+      tr.appendChild(tdA);
+      corps.appendChild(tr);
+    });
+  }
+
+  function rendreLegende() {
+    const z = nb1.format(Math.abs(etat.seuils.zscore));
+    const t = nb1.format(Math.abs(etat.seuils.tendance));
+    const l = $("legende");
+    l.textContent = "";
+    l.appendChild(el("p", { text:
+      "Alerte : dans une compétence, la moyenne est à plus de " + z + " écart-type sous la moyenne de la promotion, " +
+      "et elle a baissé d’au moins " + t + " point depuis la mise à jour précédente des notes. À surveiller : un seul de ces deux critères." }));
+    l.appendChild(el("p", { text:
+      "z : écart à la moyenne de la promotion, en écarts-types. évol. : variation de la moyenne depuis la mise à jour précédente " +
+      "(affichée dès qu’il existe deux mises à jour)." }));
+  }
+
+  function afficher(data) {
+    etat.donnees = data;
+    etat.codes = Object.keys(data.statsClasse || {});
+    if (data.seuils) etat.seuils = data.seuils;
+
+    const n = data.etudiants.length;
+    const alertes = data.etudiants.filter((e) => niveauEtudiant(e) !== "aucune").length;
+    $("resume").textContent = n + " étudiants, " + alertes + " en alerte ou à surveiller";
+
+    rendreSynthese();
+    rendreLegende();
+    rendreTableau();
+
+    $("connexion").hidden = true;
+    $("resultats").hidden = false;
+    window.scrollTo(0, 0);
+  }
+
+  function deconnecter() {
+    etat.donnees = null;
+    $("resultats").hidden = true;
+    $("connexion").hidden = false;
+    $("mdp").value = "";
+    $("corps").textContent = "";
+    $("synthese").textContent = "";
+    $("erreur").textContent = "";
+    $("mdp").focus();
+  }
+
+  $("formulaire").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const mdp = $("mdp").value;
+    const erreur = $("erreur");
+    erreur.textContent = "";
+    if (!mdp) { erreur.textContent = "Saisis le mot de passe enseignant."; return; }
+
+    const bouton = $("envoyer");
+    bouton.disabled = true;
+    bouton.textContent = "Chargement…";
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "dashboard", motDePasse: mdp }) });
+      const data = await res.json();
+      if (data.success) afficher(data);
+      else erreur.textContent = data.error || "Connexion impossible.";
+    } catch (err) {
+      erreur.textContent = "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.";
+    } finally {
+      bouton.disabled = false;
+      bouton.textContent = "Ouvrir le tableau de bord";
+    }
+  });
+
+  $("recherche").addEventListener("input", (ev) => { etat.recherche = ev.target.value; rendreTableau(); });
+  $("filtre-alertes").addEventListener("change", (ev) => { etat.alertesSeulement = ev.target.checked; rendreTableau(); });
+  $("deconnexion").addEventListener("click", deconnecter);
+</script>
+</body>
+</html>
