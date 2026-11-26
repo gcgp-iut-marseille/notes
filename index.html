@@ -369,7 +369,7 @@
     const rangees = {};
     Object.keys(parUE).forEach((code) => {
       const liste = el("ul", { class: "liste" });
-      parUE[code].forEach((m) => { rangees[m.matiere] = true; liste.appendChild(ligneNote(m.matiere, m.note)); });
+      parUE[code].forEach((m) => { rangees[m.matiere] = true; liste.appendChild(ligneNote(m.matiere, m.note, "coef. " + nombre.format(m.coefficient))); });
       matieres.appendChild(el("details", { open: "" }, [
         el("summary", { text: (NOMS_COMPETENCES[code] || code) + " (" + code + ")" }),
         liste
