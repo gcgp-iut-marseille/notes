@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test backend — App Notes GCGP</title>
+<style>
+  body { font-family: sans-serif; max-width: 520px; margin: 32px auto; padding: 0 16px; }
+  h2 { margin-top: 32px; }
+  input { display: block; width: 100%; padding: 8px; margin: 6px 0 14px; box-sizing: border-box; }
+  button { padding: 10px 16px; cursor: pointer; }
+  pre { background: #f4f4f4; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; max-height: 420px; overflow: auto; }
+</style>
+</head>
+<body>
+  <h1>Test backend — App Notes GCGP</h1>
+  <input type="hidden" id="url" value="https://script.google.com/macros/s/AKfycbwG9ZYj3hVWwxh5ut-6gavLSQ9Phql1qcBwdDDQUCqtJcj6Y0D9QOrJNNnkLL5Xadik/exec">
+
+  <h2>1. Vue étudiant</h2>
+  <label>Numéro étudiant</label>
+  <input id="numero" autocomplete="off">
+  <label>Code perso</label>
+  <input id="code" type="password" autocomplete="off">
+  <button onclick="envoyer({ numero: val('numero'), code: val('code') }, 'res1')">Tester</button>
+  <pre id="res1">(en attente)</pre>
+
+  <h2>2. Tableau de bord enseignant</h2>
+  <label>Mot de passe enseignant</label>
+  <input id="mdp" type="password" autocomplete="off">
+  <button onclick="envoyer({ action: 'dashboard', motDePasse: val('mdp') }, 'res2')">Tester</button>
+  <pre id="res2">(en attente)</pre>
+
+<script>
+function val(id) { return document.getElementById(id).value; }
+
+async function envoyer(payload, cible) {
+  const out = document.getElementById(cible);
+  out.textContent = 'Envoi en cours...';
+  try {
+    const res = await fetch(val('url'), { method: 'POST', body: JSON.stringify(payload) });
+    const texte = await res.text();
+    try {
+      out.textContent = JSON.stringify(JSON.parse(texte), null, 2);
+    } catch (e) {
+      out.textContent = 'Réponse non-JSON (HTTP ' + res.status + ') :\n' + texte.slice(0, 600);
+    }
+  } catch (err) {
+    out.textContent = 'Erreur réseau : ' + err.message;
+  }
+}
+</script>
+</body>
+</html>
