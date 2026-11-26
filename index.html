@@ -208,6 +208,12 @@
       <ul class="liste" id="recentes"></ul>
     </div>
 
+    <div id="bloc-absences" hidden>
+      <h2>Mes absences</h2>
+      <p class="discret" id="resume-absences"></p>
+      <ul class="liste" id="absences-non-validees"></ul>
+    </div>
+
     <details open>
       <summary id="titre-matieres">Toutes les matières</summary>
       <ul class="liste" id="matieres"></ul>
@@ -332,6 +338,24 @@
     listeRecentes.forEach((r) => recentes.appendChild(ligneNote(r.matiere, r.note, dateRelative(r.date))));
     $("bloc-recentes").hidden = listeRecentes.length === 0;
 
+    const abs = reponse.absences;
+    const blocAbs = $("bloc-absences");
+    const listeAbs = $("absences-non-validees");
+    listeAbs.textContent = "";
+    if (abs && typeof abs.validees === "number") {
+      const pl = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
+      $("resume-absences").textContent = pl(abs.validees, "absence validée") + " · " + pl(abs.nonValidees, "absence non validée");
+      (abs.detailNonValidees || []).forEach((a) => {
+        listeAbs.appendChild(el("li", null, [
+          el("span", null, [a.cours, el("span", { class: "matiere-date", text: a.date + " à " + a.heure })]),
+          el("span", { class: "note basse", text: "Non validée" })
+        ]));
+      });
+      blocAbs.hidden = false;
+    } else {
+      blocAbs.hidden = true;
+    }
+
     const matieres = $("matieres");
     matieres.textContent = "";
     const notes = reponse.notes || {};
@@ -354,6 +378,7 @@
     $("code").value = "";
     $("competences").textContent = "";
     $("recentes").textContent = "";
+    $("absences-non-validees").textContent = "";
     $("matieres").textContent = "";
     $("erreur").textContent = "";
     $("code").focus();
